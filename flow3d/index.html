@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Request Flow 3D — how GET and POST travel</title>
+  <meta name="description" content="A 3D animation of real HTTP requests travelling from a browser to an API, a database and a pricing engine, and back.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0612'/%3E%3Ccircle cx='32' cy='32' r='12' fill='%23ff6b9d'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg: #0b0612; --glass: rgba(24, 14, 34, .72); --line: rgba(255, 255, 255, .12); --text: #f3ecf7; --dim: #a797b3; --pink: #ff6b9d; --cyan: #5ee6ff; --green: #5dffb0; --gold: #ffc857; --red: #ff4d5e; --violet: #9d7bff; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: Inter, system-ui, sans-serif; }
+    button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+    #stage, #stage canvas { position: fixed; inset: 0; display: block; }
+    .labels { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+
+    .glass { background: var(--glass); border: 1px solid var(--line); border-radius: 18px; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); box-shadow: 0 20px 60px -20px #000; }
+    .hud { position: fixed; z-index: 5; }
+
+    .title { top: 18px; left: 18px; padding: 14px 18px; max-width: 340px; }
+    .title h1 { margin: 0; font: 700 1.25rem 'Space Grotesk', sans-serif; letter-spacing: -.01em; }
+    .title h1 span { color: var(--pink); }
+    .title p { margin: .3rem 0 0; font-size: .78rem; color: var(--dim); line-height: 1.45; }
+    .title a { color: var(--cyan); }
+
+    .controls { bottom: 18px; left: 50%; transform: translateX(-50%); padding: 10px; display: flex; gap: 8px; align-items: center; max-width: calc(100vw - 24px); overflow-x: auto; }
+    .run { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--line); font-size: .82rem; font-weight: 500; white-space: nowrap; transition: .2s; }
+    .run:hover { border-color: #fff; transform: translateY(-2px); }
+    .run b { font: 500 .66rem 'JetBrains Mono', monospace; padding: 2px 6px; border-radius: 5px; color: #0b0612; }
+    .run[data-run="products"] b { background: var(--green); }
+    .run[data-run="quote"] b, .run[data-run="checkout"] b { background: var(--pink); }
+    .run[data-run="bad"] b { background: var(--red); }
+    .run.active { background: rgba(255, 255, 255, .12); border-color: #fff; }
+    .controls.busy .run:not(.active) { opacity: .35; pointer-events: none; }
+    .controls.busy .run.active { pointer-events: none; }
+    .qty { display: flex; align-items: center; gap: 2px; padding: 4px; border-radius: 12px; border: 1px solid var(--line); font-size: .8rem; white-space: nowrap; }
+    .qty span { color: var(--dim); padding: 0 6px; }
+    .qty output { min-width: 1.6rem; text-align: center; font: 600 1rem 'Space Grotesk', sans-serif; }
+    .qty button { width: 30px; height: 30px; border-radius: 8px; background: rgba(255, 255, 255, .08); }
+    .qty button:hover { background: var(--pink); }
+    .sep { width: 1px; height: 28px; background: var(--line); flex: none; }
+    .toggle { padding: 10px 12px; border-radius: 12px; font-size: .8rem; color: var(--dim); white-space: nowrap; }
+    .toggle.on { color: var(--gold); }
+
+    .steps { left: 18px; bottom: 96px; width: 300px; padding: 14px 16px; }
+    .steps h2, .inspector h2 { margin: 0 0 .6rem; font: 600 .68rem 'Space Grotesk', sans-serif; letter-spacing: .16em; text-transform: uppercase; color: var(--dim); }
+    .steps ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+    .steps li { display: flex; gap: 10px; align-items: center; padding: 5px 8px; border-radius: 8px; font-size: .8rem; color: var(--dim); transition: .25s; }
+    .steps li i { width: 18px; height: 18px; flex: none; border-radius: 50%; border: 1px solid var(--line); display: grid; place-items: center; font: normal .6rem 'JetBrains Mono', monospace; }
+    .steps li.done { color: var(--text); }
+    .steps li.done i { background: var(--green); border-color: var(--green); color: #0b0612; }
+    .steps li.now { color: #fff; background: rgba(255, 107, 157, .16); }
+    .steps li.now i { background: var(--pink); border-color: var(--pink); color: #0b0612; box-shadow: 0 0 14px var(--pink); }
+    .steps li.skip { opacity: .35; text-decoration: line-through; }
+    .steps li.fail i { background: var(--red); border-color: var(--red); color: #0b0612; }
+    .caption { margin: .7rem 0 0; padding-top: .7rem; border-top: 1px solid var(--line); font-size: .82rem; line-height: 1.5; min-height: 4.4em; }
+    .caption code { font: .76rem 'JetBrains Mono', monospace; color: var(--cyan); }
+
+    .inspector { top: 18px; right: 18px; width: 330px; max-height: calc(100vh - 130px); padding: 14px 16px; display: flex; flex-direction: column; }
+    .req-line { display: flex; align-items: center; gap: 8px; font: .78rem 'JetBrains Mono', monospace; margin-bottom: .5rem; }
+    .req-line b { padding: 2px 7px; border-radius: 5px; color: #0b0612; background: var(--green); font-weight: 500; }
+    .req-line b.post { background: var(--pink); }
+    .req-line .st { margin-left: auto; color: var(--dim); }
+    .req-line .st.ok { color: var(--green); }
+    .req-line .st.bad { color: var(--red); }
+    .inspector h3 { margin: .6rem 0 .3rem; font: 500 .64rem 'JetBrains Mono', monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
+    .inspector pre { margin: 0; padding: 10px; background: rgba(0, 0, 0, .35); border-radius: 10px; font: .7rem/1.55 'JetBrains Mono', monospace; overflow: auto; scrollbar-width: thin; scrollbar-color: #4a3560 transparent; color: #d7cbe0; }
+    #resBody { flex: 1; min-height: 60px; }
+    .k { color: var(--pink); } .s { color: var(--green); } .n { color: var(--gold); } .b { color: var(--violet); } .dim { color: var(--dim); }
+
+    /* 3D labels */
+    .node-label { text-align: center; font: 600 .82rem 'Space Grotesk', sans-serif; color: #fff; text-shadow: 0 2px 12px #000; white-space: nowrap; }
+    .node-label small { display: block; font: 400 .66rem Inter, sans-serif; color: var(--dim); }
+    .pkt { font: 500 .7rem 'JetBrains Mono', monospace; padding: 4px 9px; border-radius: 999px; background: rgba(11, 6, 18, .85); border: 1px solid currentColor; white-space: nowrap; transform: translateY(-26px); box-shadow: 0 0 18px -4px currentColor; }
+    .float { font: 600 .9rem 'Space Grotesk', sans-serif; white-space: nowrap; text-shadow: 0 0 16px currentColor, 0 2px 8px #000; }
+
+    .fallback { position: fixed; inset: 0; display: grid; place-items: center; padding: 2rem; text-align: center; color: var(--dim); }
+
+    @media (max-width: 900px) {
+      .title { right: 18px; max-width: none; padding: 10px 14px; }
+      .title p { display: none; }
+      .inspector { display: none; }
+      .steps { left: 12px; right: 12px; width: auto; bottom: 84px; padding: 10px 12px; }
+      .steps ol, .steps h2 { display: none; }
+      .caption { margin: 0; padding: 0; border: 0; min-height: 3em; font-size: .8rem; }
+      .controls { bottom: 12px; left: 12px; right: 12px; transform: none; justify-content: flex-start; }
+    }
+  </style>
+  <script type="importmap">
+    { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
+  </script>
+</head>
+<body>
+  <div id="stage"></div>
+
+  <header class="hud glass title">
+    <h1>Request Flow <span>3D</span></h1>
+    <p>Real HTTP requests to the <a href="https://ecommerceplatform-phi.vercel.app" target="_blank" rel="noopener">Rosaline store API</a>, shown as they travel. Drag to orbit, scroll to zoom.</p>
+  </header>
+
+  <aside class="hud glass inspector">
+    <h2>Live inspector</h2>
+    <div class="req-line"><b id="verb">GET</b><span id="path">/api/products</span><span class="st" id="status">idle</span></div>
+    <h3>Request body</h3>
+    <pre id="reqBody"><span class="dim">Pick a request below.</span></pre>
+    <h3>Response</h3>
+    <pre id="resBody"><span class="dim">—</span></pre>
+  </aside>
+
+  <section class="hud glass steps">
+    <h2>What is happening</h2>
+    <ol id="steps"></ol>
+    <p class="caption" id="caption">Choose a request to send. Each one really calls the API, and the animation follows it.</p>
+  </section>
+
+  <nav class="hud glass controls" id="controls">
+    <button class="run" data-run="products"><b>GET</b>Load products</button>
+    <div class="qty"><span>Buy</span><button id="minus" aria-label="Fewer">−</button><output id="qty">3</output><button id="plus" aria-label="More">+</button></div>
+    <button class="run" data-run="quote"><b>POST</b>Price the bag</button>
+    <button class="run" data-run="checkout"><b>POST</b>Checkout</button>
+    <button class="run" data-run="bad"><b>422</b>Bad request</button>
+    <span class="sep"></span>
+    <button class="toggle" id="tour">▶ Auto tour</button>
+  </nav>
+
+  <script type="module" src="/main.js"></script>
+</body>
+</html>
