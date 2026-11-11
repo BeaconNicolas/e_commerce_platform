@@ -514,7 +514,7 @@ renderer.setAnimationLoop(() => {
   core.position.y = cage.position.y = 2.2 + Math.sin(t * 1.4) * 0.12;
   gateRing.rotation.z = t * 0.6; gateRing2.rotation.z = -t * 0.9;
   gateRing2.scale.setScalar(1 + Math.sin(t * 2) * 0.05);
-  if (!userMoved) { const a = Math.sin(t * 0.22) * 0.32; camera.position.set(controls.target.x + base.x * Math.cos(a) + base.z * Math.sin(a), controls.target.y + base.y + Math.sin(t * 0.3) * 0.5, controls.target.z + base.z * Math.cos(a) - base.x * Math.sin(a)); }
+  if (!userMoved) { const a = Math.sin(t * 0.22) * 0.16; camera.position.set(controls.target.x + base.x * Math.cos(a) + base.z * Math.sin(a), controls.target.y + base.y + Math.sin(t * 0.3) * 0.5, controls.target.z + base.z * Math.cos(a) - base.x * Math.sin(a)); }
   controls.update();
   composer.render();
   labels.render(scene, camera);
