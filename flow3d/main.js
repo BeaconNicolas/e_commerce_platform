@@ -41,16 +41,17 @@ scene.fog = new THREE.FogExp2(C.bg, 0.016);
 
 const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.1, 300);
 const controls = new OrbitControls(camera, renderer.domElement);
-controls.target.set(-0.5, 2, 0.5);
+controls.target.set(-0.8, 2.2, 0.5);
 controls.enableDamping = true;
-controls.autoRotate = true;
-controls.autoRotateSpeed = 0.35;
+controls.autoRotate = false;
 controls.maxPolarAngle = Math.PI * 0.49;
 controls.minDistance = 10;
 controls.maxDistance = 60;
+const base = new THREE.Vector3();
+let userMoved = false;
 function frameCamera() {
   const narrow = innerWidth / innerHeight < 1;
-  camera.position.set(narrow ? 4 : 2, narrow ? 20 : 11, narrow ? 44 : 23);
+  base.set(narrow ? 2 : 0.5, narrow ? 13 : 6.5, narrow ? 31 : 15.5); camera.position.copy(controls.target).add(base);
 }
 frameCamera();
 
@@ -61,6 +62,7 @@ composer.addPass(bloom);
 composer.addPass(new OutputPass());
 
 addEventListener('resize', () => {
+  if (!userMoved) frameCamera();
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
@@ -70,12 +72,12 @@ addEventListener('resize', () => {
 
 /* ------------------------------------------------------------------ world */
 
-scene.add(new THREE.AmbientLight(0xb9a4ff, 0.7));
-const sun = new THREE.DirectionalLight(0xffffff, 1.6);
+scene.add(new THREE.AmbientLight(0xcbb8ff, 2.2));
+const sun = new THREE.DirectionalLight(0xffffff, 3.2);
 sun.position.set(6, 14, 10);
 scene.add(sun);
 
-const grid = new THREE.GridHelper(120, 120, 0x4a2a66, 0x1d1230);
+const grid = new THREE.GridHelper(120, 120, 0x7a45ad, 0x2c1b4a);
 grid.position.y = -0.01;
 scene.add(grid);
 
@@ -105,7 +107,7 @@ function label(title, sub, y) {
 function station(name, title, sub, pos, color, labelY) {
   const group = new THREE.Group();
   group.position.copy(pos);
-  const base = new THREE.Mesh(new THREE.CylinderGeometry(2.3, 2.6, 0.4, 6), metal(0x1a1026));
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(2.3, 2.6, 0.4, 6), metal(0x2d1d44));
   base.position.y = 0.2;
   const ring = new THREE.Mesh(new THREE.TorusGeometry(2.35, 0.045, 8, 6), glow(color));
   ring.rotation.x = Math.PI / 2;
@@ -127,12 +129,12 @@ screenCanvas.width = 512; screenCanvas.height = 320;
 const screenTex = new THREE.CanvasTexture(screenCanvas);
 screenTex.colorSpace = THREE.SRGBColorSpace;
 {
-  const deck = new THREE.Mesh(new THREE.BoxGeometry(3, 0.12, 2), metal(0x2a1c3a));
+  const deck = new THREE.Mesh(new THREE.BoxGeometry(3, 0.12, 2), metal(0x4a3566));
   deck.position.y = 0.5;
   const lid = new THREE.Group();
   lid.position.set(0, 0.56, -1);
   lid.rotation.x = -0.22;
-  const shell = new THREE.Mesh(new THREE.BoxGeometry(3, 1.95, 0.08), metal(0x2a1c3a));
+  const shell = new THREE.Mesh(new THREE.BoxGeometry(3, 1.95, 0.08), metal(0x4a3566));
   shell.position.y = 0.98;
   const face = new THREE.Mesh(new THREE.PlaneGeometry(2.8, 1.75), new THREE.MeshBasicMaterial({ map: screenTex }));
   face.position.set(0, 0.98, 0.045);
@@ -156,7 +158,7 @@ drawScreen('Rosaline', ['Ready when you are.']);
 const server = station('server', 'API route', 'serverless function', V(0, 0, 0), C.violet, 4.6);
 const leds = [];
 for (let i = 0; i < 4; i++) {
-  const slab = new THREE.Mesh(new THREE.BoxGeometry(2.3, 0.5, 2.3), metal(0x2b1d45, C.violet, 0.08));
+  const slab = new THREE.Mesh(new THREE.BoxGeometry(2.3, 0.5, 2.3), metal(0x4b3a7a, C.violet, 0.25));
   slab.position.y = 0.75 + i * 0.62;
   server.body.add(slab);
   for (let j = 0; j < 4; j++) {
@@ -172,10 +174,10 @@ scanner.visible = false;
 server.body.add(scanner);
 
 // Database: stacked discs.
-const db = station('db', 'Catalog', 'trusted prices', V(8, 0, -3.5), C.gold, 4.2);
+const db = station('db', 'Catalog', 'trusted prices', V(8, 0, -4.5), C.gold, 4.2);
 const discs = new THREE.Group();
 for (let i = 0; i < 3; i++) {
-  const disc = new THREE.Mesh(new THREE.CylinderGeometry(1.25, 1.25, 0.55, 40), metal(0x3a2a14, C.gold, 0.15));
+  const disc = new THREE.Mesh(new THREE.CylinderGeometry(1.25, 1.25, 0.55, 40), metal(0x6b4d1c, C.gold, 0.35));
   disc.position.y = 0.85 + i * 0.75;
   const band = new THREE.Mesh(new THREE.TorusGeometry(1.27, 0.035, 8, 48), glow(C.gold));
   band.rotation.x = Math.PI / 2;
@@ -185,7 +187,7 @@ for (let i = 0; i < 3; i++) {
 db.body.add(discs);
 
 // Pricing engine: a spinning crystal.
-const pricing = station('pricing', 'Pricing engine', 'does the maths', V(7, 0, 5), C.pink, 4.4);
+const pricing = station('pricing', 'Pricing engine', 'does the maths', V(6, 0, 5.5), C.pink, 4.4);
 const core = new THREE.Mesh(new THREE.IcosahedronGeometry(0.75, 0), metal(0x5a1f38, C.pink, 1.4));
 const cage = new THREE.Mesh(new THREE.IcosahedronGeometry(1.3, 1), new THREE.MeshBasicMaterial({ color: C.pink, wireframe: true, transparent: true, opacity: 0.5 }));
 core.position.y = cage.position.y = 2.2;
@@ -194,8 +196,8 @@ pricing.body.add(core, cage);
 const anchor = {
   browser: V(-8.9, 2.7, 1.6),
   server: V(0, 3.5, 0),
-  db: V(8, 3.3, -3.5),
-  pricing: V(7, 2.2, 5),
+  db: V(8, 3.3, -4.5),
+  pricing: V(6, 2.2, 5.5),
 };
 const wires = {
   net: new THREE.QuadraticBezierCurve3(anchor.browser, V(-4.6, 8, 1), anchor.server),
@@ -491,7 +493,8 @@ document.addEventListener('click', (e) => {
     if (touring && !busy) nextTour();
   }
 });
-renderer.domElement.addEventListener('pointerdown', () => { controls.autoRotate = false; });
+renderer.domElement.addEventListener('pointerdown', () => { userMoved = true; });
+renderer.domElement.addEventListener('wheel', () => { userMoved = true; }, { passive: true });
 
 /* ------------------------------------------------------------------ loop */
 
@@ -511,6 +514,7 @@ renderer.setAnimationLoop(() => {
   core.position.y = cage.position.y = 2.2 + Math.sin(t * 1.4) * 0.12;
   gateRing.rotation.z = t * 0.6; gateRing2.rotation.z = -t * 0.9;
   gateRing2.scale.setScalar(1 + Math.sin(t * 2) * 0.05);
+  if (!userMoved) { const a = Math.sin(t * 0.22) * 0.32; camera.position.set(controls.target.x + base.x * Math.cos(a) + base.z * Math.sin(a), controls.target.y + base.y + Math.sin(t * 0.3) * 0.5, controls.target.z + base.z * Math.cos(a) - base.x * Math.sin(a)); }
   controls.update();
   composer.render();
   labels.render(scene, camera);
