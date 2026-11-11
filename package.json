@@ -1,0 +1,7 @@
+{
+  "name": "e-commerce-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Rosaline — a women's boutique storefront that shows how the frontend talks to the backend and how order totals are calculated.",
+  "engines": { "node": ">=20" }
+}
