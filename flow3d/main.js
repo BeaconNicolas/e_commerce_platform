@@ -41,7 +41,7 @@ scene.fog = new THREE.FogExp2(C.bg, 0.016);
 
 const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.1, 300);
 const controls = new OrbitControls(camera, renderer.domElement);
-controls.target.set(-0.8, 2.2, 0.5);
+controls.target.set(0, 2.2, 1);
 controls.enableDamping = true;
 controls.autoRotate = false;
 controls.maxPolarAngle = Math.PI * 0.49;
@@ -51,7 +51,7 @@ const base = new THREE.Vector3();
 let userMoved = false;
 function frameCamera() {
   const narrow = innerWidth / innerHeight < 1;
-  base.set(narrow ? 2 : 0.5, narrow ? 13 : 6.5, narrow ? 31 : 15.5); camera.position.copy(controls.target).add(base);
+  base.set(narrow ? 2 : 0.5, narrow ? 14 : 8, narrow ? 34 : 20); camera.position.copy(controls.target).add(base);
 }
 frameCamera();
 
