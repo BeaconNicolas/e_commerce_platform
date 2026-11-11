@@ -317,3 +317,11 @@ section { padding: clamp(3rem, 7vw, 6rem) clamp(1rem, 4vw, 3.5rem); }
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+/* Polish */
+h1, h2, .hero-points strong, .qty-big output, .sum.grand, .step.total .step-amount, .modal-card h3 { font-variant-numeric: lining-nums; }
+.code, .call pre, .console-panel, .drawer-body { scrollbar-width: thin; scrollbar-color: var(--plum-line) transparent; }
+.drawer-body { scrollbar-color: var(--sand) transparent; }
+.step { display: flex; flex-wrap: wrap; justify-content: space-between; }
+.step-label { flex: 1; min-width: 0; }
+.step-formula { flex: 0 0 100%; }
